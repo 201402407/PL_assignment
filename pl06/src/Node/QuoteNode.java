@@ -4,7 +4,7 @@ package Node;
 public class QuoteNode implements Node {
 	Node quoted;
 	
-	public QuoteNode(Node quoted) {
+	public QuoteNode(Node quoted) { // ' 다음 노드를 인자로 받음
 		this.quoted = quoted;
 	}
 	

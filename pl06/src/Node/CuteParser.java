@@ -82,10 +82,10 @@ public class CuteParser {
 		case R_PAREN: // ')'이면 END_OF_LIST로 해서 ')' 표시.
 			return END_OF_LIST;
 			
-		case APOSTROPHE:
+		case APOSTROPHE: 
 			return new QuoteNode(parseExpr());
-		case QUOTE:
-			return new QuoteNode(parseExpr());
+		case QUOTE: // 둘 다 같은 의미이면 윗 줄은 지워도 되지 않을까 ?
+			return new QuoteNode(parseExpr()); // QuoteNode이면 생성자 매개변수로 지금 함수를 또 실행해서 나온 다음 Token의 Node를 사용한다.
 			
 		default:
 			// head의 next를 만들고 head를 반환하도록 작성.
@@ -103,10 +103,10 @@ public class CuteParser {
 			return ListNode.ENDLIST;
 
 		ListNode tail = parseExprList(); // tail 넣는 부분. 나머지 뒤의 원소들을 담고 있다. 
-		// 마지막 부분은 ENDLIST로 리턴하므로 나머지 원소가 담긴다.
+		// 마지막 부분은 ENDLIST로 리턴, 이것은 null이므로 나머지 원소가 담긴다.
 		if(tail == null)
 			return null;
 		
-		return ListNode.cons(head, tail);
+		return ListNode.cons(head, tail); // ListNode cons에 담는다. head = car, tail = cdr.
 	}
 }

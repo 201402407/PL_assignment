@@ -10,7 +10,7 @@ import Node.NodePrinter;
 public class ScannerMain {
     public static final void main(String... args) throws Exception {
         ClassLoader cloader = ScannerMain.class.getClassLoader();
-        File file = new File(cloader.getResource("parser/as07.txt").getFile()); // 파일 읽기
+        File file = new File(cloader.getResource("parser/as06.txt").getFile()); // 파일 읽기
         
         CuteParser cuteParser = new CuteParser(file);
         NodePrinter.getPrinter(System.out).prettyPrint(cuteParser.parseExpr());
