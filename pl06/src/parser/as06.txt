@@ -1,1 +1,1 @@
-( + ( length ' ( 2 3 16 ) ) -378 )
+( - ( lee ' ( + haewon 2014 quote ( * 02407 ) define programming ) ) )

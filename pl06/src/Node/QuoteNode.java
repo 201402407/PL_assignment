@@ -13,7 +13,7 @@ public class QuoteNode implements Node {
 		return quoted.toString();
 	}
 	
-	public Node nodeInside() {
+	public Node nodeInside() { // ' 다음 노드를 리턴해준다.
 		// TODO Auto-generated method stub
 		return quoted;
 	}
