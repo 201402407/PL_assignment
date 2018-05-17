@@ -16,4 +16,8 @@ public class BooleanNode implements ValueNode {
 	private BooleanNode(Boolean b) {
 		value = b;
 	}
+	
+	public Boolean getBoolean() {
+		return value;
+	}
 }

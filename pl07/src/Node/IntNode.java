@@ -13,4 +13,8 @@ public class IntNode implements ValueNode {
 	public IntNode(String text) {
 		this.value = new Integer(text);
 	}
+	
+	public Integer getIntValue() {
+		return value;
+	}
 }
