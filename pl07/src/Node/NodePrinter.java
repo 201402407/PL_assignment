@@ -45,7 +45,7 @@ public class NodePrinter {
 		if(node instanceof ListNode) { // 만약 node가 ListNode라면?
 			ps.print("(");
 			printNode((ListNode)node);
-			ps.print(")");
+			ps.print(" )");
 		}
 		else if(node instanceof QuoteNode) {
 			printNode((QuoteNode)node);

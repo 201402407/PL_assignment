@@ -5,7 +5,6 @@ import parser.Token;
 import parser.TokenType;
 import Node.*;
 import parser.ScannerMain;
-
 import java.io.File;
 
 
@@ -43,7 +42,7 @@ public class CuteInterpreter {
 		if(list.car() instanceof BinaryOpNode) { // head가 BinaryOpNode인 경우.
 			return runBinary(list); // Binary 연산을 수행하기 위해 runBinary() 실행. parameter를 ListNode list전체로 받는다.
 		}
-		if(list.car() instanceof QuoteNode) { // QuoteNode인 경우.
+		if(list.car() instanceof QuoteNode) { // QuoteNode인 경우. ?
 			return runQuote(list);
 		}
 		return list; // 이외의 노드는 그냥 리턴.
@@ -51,12 +50,12 @@ public class CuteInterpreter {
 	
 	private Node runFunction(FunctionNode operator, ListNode operand) { // runList에서 받은 인자 ListNode의 car()(head)가 FunctionNode인 경우.
 		// operator는 인자로 받은 car()의 car(), operand는 ListNode 타입의 cdr()이다.
-		((QuoteNode)operand.cdr()).nodeInside(); // ?
 		switch (operator.getFunctionType()) { // 여러 동작 구현.
 			case CAR: // List의 맨 처음 원소 리턴.
 				return runExpr(operand.car()); // PDF에 QuoteNode가 없어서.
 			case CDR: // List의 맨 처음 원소를 제외한 나머지 list 리턴.
-				return new QuoteNode(runExpr(operand.cdr())); // PDF에는 QuoteNode가 있다.
+				QuoteNode a = new QuoteNode(runExpr(operand.cdr())); // PDF에는 QuoteNode가 있다.
+				return a;
 			case CONS: // 한 개의 원소와 한 개의 리스트를 붙여서 새로운 리스트 만듬. (head + tail)
 				return new QuoteNode(ListNode.cons(runExpr(operand.car()), (ListNode)runExpr(operand.cdr())));
 			case NOT: // BooleanNode에 !(not) 걸어버리기!
@@ -65,9 +64,20 @@ public class CuteInterpreter {
 				}
 				return BooleanNode.TRUE_NODE;
 			case COND: // 조건문.
-			case ATOM_Q: // ATOM(list이면 false, list가 아니면 true, null이면 true(이건 선택) )
 				
+			case ATOM_Q: // ATOM(list이면 false, list가 아니면 true, null이면 true(이건 선택) )
+				if(runExpr(operand.car()) instanceof ListNode) {
+					if(runExpr(operand.car()).equals(null)) {
+						return BooleanNode.TRUE_NODE;
+					}
+					return BooleanNode.FALSE_NODE;
+				}
+				return BooleanNode.TRUE_NODE;
 			case NULL_Q: // list가 null인지 검사.
+				if(((ListNode)runExpr(operand.car())).equals(ListNode.EMPTYLIST)) {
+					return BooleanNode.TRUE_NODE;
+				}
+				return BooleanNode.FALSE_NODE;
 			case EQ_Q: // 두 값이 같은 지 검사.
 				if(runExpr(operand.car()).equals(runExpr(operand.cdr()))) {
 					return BooleanNode.TRUE_NODE;
@@ -106,7 +116,7 @@ public class CuteInterpreter {
 				if(((IntNode)runExpr(operand.car())).getIntValue() > ((IntNode)runExpr(operand.cdr())).getIntValue()) {
 					return BooleanNode.TRUE_NODE; // public static 변수 이름이 TRUE_NODE인데 이는 true인 BooleanNode 객체를 생성한다.
 				}
-				return BooleanNode.FALSE_NODE; // > 가 아니면.				}
+				return BooleanNode.FALSE_NODE; // > 가 아니면.				
 			case EQ: // =
 				if(((IntNode)runExpr(operand.car())).getIntValue() == ((IntNode)runExpr(operand.cdr())).getIntValue()) {
 					return BooleanNode.TRUE_NODE; // public static 변수 이름이 TRUE_NODE인데 이는 true인 BooleanNode 객체를 생성한다.
@@ -123,7 +133,7 @@ public class CuteInterpreter {
 		return ((QuoteNode)node.car()).nodeInside(); // 
 	}
 	
-	public static void main(String[] args) throws Exception{ 
+	public static void main(String[] args) 	{ 
 		ClassLoader cloader = CuteInterpreter.class.getClassLoader();
 		File file = new File(cloader.getResource("interpreter/as07.txt").getFile());
 		CuteParser cuteParser = new CuteParser(file);
