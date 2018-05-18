@@ -25,8 +25,8 @@ public class CuteInterpreter {
 			return rootExpr;
 		else if (rootExpr instanceof ListNode)
 			return runList((ListNode) rootExpr); // ListNode인 경우에만 다르게 리턴한다. runList() 실행.
-	//	else if (rootExpr instanceof QuoteNode) // QuoteNode인 경우에 추가 ?
-		//	return runExpr(runQuote((ListNode)rootExpr)); // nodeInside를 runExpr한다.
+		else if (rootExpr instanceof QuoteNode) // runExpr에 들어온 rootExpr가 QuoteNode인 경우.
+			return ((QuoteNode) rootExpr).nodeInside(); // nodeInside를 return한다.
 		else
 			errorLog("run Expr error");
 		return null;
@@ -41,9 +41,9 @@ public class CuteInterpreter {
 		if(list.car() instanceof BinaryOpNode) { // head가 BinaryOpNode인 경우.
 			return runBinary(list); // Binary 연산을 수행하기 위해 runBinary() 실행. parameter를 ListNode list전체로 받는다.
 		}
-	//	if(list.car() instanceof QuoteNode) { // QuoteNode인 경우. ?
-	//		return runQuote(list);
-	//	}
+		if(list.car() instanceof QuoteNode) { // runExpr에 들어온 rootExpr가 ListNode이고, 이 노드의 car()이 QuoteNode인 경우.
+			return runQuote(list); // ListNode 안의 QuoteNode의 nodeInside 리턴. 
+		}
 		return list; // 이외의 노드는 그냥 리턴.
 	}
 	
@@ -51,19 +51,19 @@ public class CuteInterpreter {
 		// operator는 인자로 받은 car()의 car(), operand는 ListNode 타입의 cdr()이다.
 		switch (operator.getFunctionType()) { // 여러 동작 구현.
 			case CAR: // List의 맨 처음 원소 리턴.
-				if(operand.car() instanceof QuoteNode) { // 앞에 ' 가 있는 경우.
-					return ((ListNode)runQuote(operand)).car();
-				}
-				return ((ListNode)operand.car()).car(); // 앞에 ' 가 없는 경우.
+			//	if(operand.car() instanceof QuoteNode) { // 앞에 ' 가 있는 경우.
+					return ((ListNode)runExpr(operand.car())).car();
+			//	}
+		//		return ((ListNode)operand.car()).car(); // 앞에 ' 가 없는 경우.
 			case CDR: // List의 맨 처음 원소를 제외한 나머지 list 리턴.
-				if(operand.car() instanceof QuoteNode) { // 앞에 ' 가 있는 경우.
-					return new QuoteNode(((ListNode)runQuote(operand)).cdr()); // PDF에 cdr의 출력값에는 ' 가 붙어있다.
-				}
-				return new QuoteNode(((ListNode)operand.car()).cdr()); // 앞에 ' 가 없는 경우.
+		//		if(operand.car() instanceof QuoteNode) { // 앞에 ' 가 있는 경우.
+					return new QuoteNode(((ListNode)runExpr(operand.car())).cdr()); // PDF에 cdr의 출력값에는 ' 가 붙어있다.
+		//		}
+		//		return new QuoteNode(((ListNode)operand.car()).cdr()); // 앞에 ' 가 없는 경우.
 			case CONS: // 한 개의 원소와 한 개의 리스트를 붙여서 새로운 리스트 만듬. (head + tail)
-				return new QuoteNode(ListNode.cons(runExpr(operand.car()), (ListNode)runExpr(operand.cdr())));
+				return new QuoteNode(ListNode.cons(runExpr(operand.car()), (ListNode)runExpr(operand.cdr())));	
 			case NOT: // BooleanNode에 !(not) 걸어버리기!
-				if(((BooleanNode)runExpr(operand.cdr())).getBoolean()) {
+				if(((BooleanNode)runExpr(operand.car())).getBoolean()) {
 					return BooleanNode.FALSE_NODE;
 				}
 				return BooleanNode.TRUE_NODE;

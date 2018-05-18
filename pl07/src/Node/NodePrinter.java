@@ -50,6 +50,10 @@ public class NodePrinter {
 		else if(node instanceof QuoteNode) {
 			printNode((QuoteNode)node);
 		}
+		else if(node instanceof BooleanNode) {
+			ps.print(((BooleanNode)node).toString());
+			ps.print(" ");
+		}
 		else {
 			String temp = node.toString();
 			StringTokenizer st = new StringTokenizer(temp, " ");
