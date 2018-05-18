@@ -67,23 +67,28 @@ public class CuteInterpreter {
 					return BooleanNode.FALSE_NODE;
 				}
 				return BooleanNode.TRUE_NODE;
-			case COND: // 조건문.
+			case COND: // 조건문. 보류.
 				
-			case ATOM_Q: // ATOM(list이면 false, list가 아니면 true, null이면 true(이건 선택) )
+			case ATOM_Q: // ATOM(list이면 false, list가 아니면 true, null이면 true(이건 선택 - 완료.) )
 				if(runExpr(operand.car()) instanceof ListNode) {
-					if(runExpr(operand.car()).equals(null)) {
-						return BooleanNode.TRUE_NODE;
-					}
+					if(runExpr(((ListNode)runExpr(operand.car())).car()) == null // 해당 list의 car()이 null이고 
+							&& runExpr(((ListNode)runExpr(operand.car())).cdr()) == null) { // 해당 list의 cdr()도 null이면
+								return BooleanNode.TRUE_NODE; // null list이면 true.
+							}
 					return BooleanNode.FALSE_NODE;
 				}
 				return BooleanNode.TRUE_NODE;
 			case NULL_Q: // list가 null인지 검사.
-				if(((ListNode)runExpr(operand.car())).equals(ListNode.EMPTYLIST)) {
+				if(runExpr(((ListNode)runExpr(operand.car())).car()) == null // 해당 list의 car()이 null이고 
+				&& runExpr(((ListNode)runExpr(operand.car())).cdr()) == null) { // 해당 list의 cdr()도 null이면
 					return BooleanNode.TRUE_NODE;
 				}
 				return BooleanNode.FALSE_NODE;
-			case EQ_Q: // 두 값이 같은 지 검사.
-				if(runExpr(operand.car()).equals(runExpr(operand.cdr()))) {
+			case EQ_Q: // 두 값이 같은 지 검사. 보류.
+				NodePrinter.getPrinter(System.out).prettyPrint(runExpr(operand.cdr()));
+				System.out.println(String.valueOf(runExpr(operand.car())));
+				System.out.println(String.valueOf(runExpr(operand.cdr())));
+				if(String.valueOf(runExpr(operand.car())).equals(String.valueOf(runExpr(operand.cdr())))) { // 값을 String으로 변환 후 비교.
 					return BooleanNode.TRUE_NODE;
 				}
 				return BooleanNode.FALSE_NODE;
@@ -99,31 +104,32 @@ public class CuteInterpreter {
 		ListNode operand = list.cdr();
 		switch (operator.getBinType()) { // 바이너리 연산 동작 구현
 			case PLUS: // 덧셈. +
-			//	NodePrinter.getPrinter(System.out).prettyPrint(operand);
 				return new IntNode(String.valueOf(((IntNode)runExpr(operand.car())).getIntValue()
-						+ ((IntNode)runExpr(operand.cdr())).getIntValue())); // list.cdr()의 car()과 cdr() 더하기.
+						+ ((IntNode)((ListNode)runExpr(operand.cdr())).car()).getIntValue())); // operand 더하기.
 			case MINUS: // 뺄셈. -
 				return new IntNode(String.valueOf(((IntNode)runExpr(operand.car())).getIntValue()
-						- ((IntNode)runExpr(operand.cdr())).getIntValue())); // list.cdr()의 car()과 cdr() 빼기.
+						- ((IntNode)((ListNode)runExpr(operand.cdr())).car()).getIntValue())); // operand의 빼기.
 			case DIV: // 나눗셈. /
 				return new IntNode(String.valueOf(((IntNode)runExpr(operand.car())).getIntValue()
-						/ ((IntNode)runExpr(operand.cdr())).getIntValue())); // list.cdr()의 car()과 cdr() 나누기.
+						/ ((IntNode)((ListNode)runExpr(operand.cdr())).car()).getIntValue())); // operand의 나누기.
 			case TIMES: // 곱셈. *
 				return new IntNode(String.valueOf(((IntNode)runExpr(operand.car())).getIntValue()
-						* ((IntNode)runExpr(operand.cdr())).getIntValue())); // list.cdr()의 car()과 cdr() 곱하기.
+						* ((IntNode)((ListNode)runExpr(operand.cdr())).car()).getIntValue())); // operand의 곱하기.
 			case LT: // <
-				if(((IntNode)runExpr(operand.car())).getIntValue() < ((IntNode)runExpr(operand.cdr())).getIntValue()) {
+				if(((IntNode)runExpr(operand.car())).getIntValue() < ((IntNode)((ListNode)runExpr(operand.cdr())).car()).getIntValue()) {
 					return BooleanNode.TRUE_NODE; // public static 변수 이름이 TRUE_NODE인데 이는 true인 BooleanNode 객체를 생성한다.
 				}
 				return BooleanNode.FALSE_NODE; // < 가 아니면.
 			case GT: // >
-				if(((IntNode)runExpr(operand.car())).getIntValue() > ((IntNode)runExpr(operand.cdr())).getIntValue()) {
-					return BooleanNode.TRUE_NODE; // public static 변수 이름이 TRUE_NODE인데 이는 true인 BooleanNode 객체를 생성한다.
+				if(((IntNode)runExpr(operand.car())).getIntValue() > ((IntNode)((ListNode)runExpr(operand.cdr())).car()).getIntValue()) {
+					return BooleanNode.TRUE_NODE; // 두 operand 중 car()가 더 크면 TRUE
 				}
 				return BooleanNode.FALSE_NODE; // > 가 아니면.				
 			case EQ: // =
-				if(((IntNode)runExpr(operand.car())).getIntValue() == ((IntNode)runExpr(operand.cdr())).getIntValue()) {
-					return BooleanNode.TRUE_NODE; // public static 변수 이름이 TRUE_NODE인데 이는 true인 BooleanNode 객체를 생성한다.
+				System.out.println(((IntNode)runExpr(operand.car())).getIntValue());
+				System.out.println(((IntNode)((ListNode)runExpr(operand.cdr())).car()).getIntValue());
+				if(((IntNode)runExpr(operand.car())).getIntValue() == ((IntNode)((ListNode)runExpr(operand.cdr())).car()).getIntValue()) {
+					return BooleanNode.TRUE_NODE; // 두 operand가 같으면 TRUE
 				}
 				return BooleanNode.FALSE_NODE; // = 가 아니면.				
 			default:
