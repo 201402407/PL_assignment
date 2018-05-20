@@ -58,8 +58,26 @@ public class CuteInterpreter {
 					return BooleanNode.FALSE_NODE;
 				}
 				return BooleanNode.TRUE_NODE;
-			case COND: // 조건문. 보류.
-				
+			case COND: // 조건문. 하나만 T면 그 값을 리턴. 대신 둘 다 True면 앞의 값인 car() 리턴.
+				if(runExpr(((ListNode)(operand.car())).car()) instanceof BooleanNode) { // 만약 car()의 앞이 Boolean이면.
+					System.out.println("tTrue");
+					if(((BooleanNode)runExpr(((ListNode)(operand.car())).car())).getBoolean()) { // car().car()이 #T이면.
+						return runExpr(((ListNode)(operand.car())).cdr());
+					}
+				}
+				if(runExpr((operand.cdr()).car()) instanceof BooleanNode) { // 만약 cdr()의 앞이 Boolean이면.
+					System.out.println("zzz");
+					if(((BooleanNode)runExpr((operand.cdr()).car())).getBoolean()) { // car()이 #T이면.
+						return runExpr((operand.cdr()).cdr());
+					}
+				}
+				if(((BooleanNode)runExpr(((ListNode)runExpr(operand.car())).car())).getBoolean()) { // 연산을 통해 car()이 True가 나오면.
+					return runExpr(((ListNode)(operand.car())).cdr());
+				}
+				if(((BooleanNode)runExpr(((ListNode)runExpr(operand.cdr())).car())).getBoolean()) { // 연산을 통해 cdr()이 True가 나오면.
+					return runExpr((operand.cdr()).cdr());
+				}
+				return BooleanNode.FALSE_NODE;
 			case ATOM_Q: // ATOM(list이면 false, list가 아니면 true, null이면 true(이건 선택 - 완료.) )
 				if(runExpr(operand.car()) instanceof ListNode) {
 					if(runExpr(((ListNode)runExpr(operand.car())).car()) == null // 해당 list의 car()이 null이고 
@@ -76,10 +94,13 @@ public class CuteInterpreter {
 				}
 				return BooleanNode.FALSE_NODE; 	
 			case EQ_Q: // 두 값이 같은 지 검사. 보류.
+				NodePrinter.getPrinter(System.out).prettyPrint(runExpr(operand.car()));
 				NodePrinter.getPrinter(System.out).prettyPrint(runExpr(operand.cdr()));
-				System.out.println(String.valueOf(runExpr(operand.car())));
-				System.out.println(String.valueOf(runExpr(operand.cdr())));
-				if(String.valueOf(runExpr(operand.car())).equals(String.valueOf(runExpr(operand.cdr())))) { // 값을 String으로 변환 후 비교.
+				ListNode a = (ListNode)runExpr(operand.car());
+				ListNode b = (ListNode)runExpr(operand.cdr());
+			
+				if(a.equals(b)) { // 값을 String으로 변환 후 비교.
+					System.out.println("왜안들어가");
 					return BooleanNode.TRUE_NODE;
 				}
 				return BooleanNode.FALSE_NODE;
