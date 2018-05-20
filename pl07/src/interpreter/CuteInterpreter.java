@@ -1,10 +1,7 @@
 // 201402407 이해원
 package interpreter;
 
-import parser.Token;
-import parser.TokenType;
 import Node.*;
-import parser.ScannerMain;
 import java.io.File;
 
 public class CuteInterpreter {
@@ -51,15 +48,9 @@ public class CuteInterpreter {
 		// operator는 인자로 받은 car()의 car(), operand는 ListNode 타입의 cdr()이다.
 		switch (operator.getFunctionType()) { // 여러 동작 구현.
 			case CAR: // List의 맨 처음 원소 리턴.
-			//	if(operand.car() instanceof QuoteNode) { // 앞에 ' 가 있는 경우.
 					return ((ListNode)runExpr(operand.car())).car();
-			//	}
-		//		return ((ListNode)operand.car()).car(); // 앞에 ' 가 없는 경우.
 			case CDR: // List의 맨 처음 원소를 제외한 나머지 list 리턴.
-		//		if(operand.car() instanceof QuoteNode) { // 앞에 ' 가 있는 경우.
 					return new QuoteNode(((ListNode)runExpr(operand.car())).cdr()); // PDF에 cdr의 출력값에는 ' 가 붙어있다.
-		//		}
-		//		return new QuoteNode(((ListNode)operand.car()).cdr()); // 앞에 ' 가 없는 경우.
 			case CONS: // 한 개의 원소와 한 개의 리스트를 붙여서 새로운 리스트 만듬. (head + tail)
 				return new QuoteNode(ListNode.cons(runExpr(operand.car()), (ListNode)runExpr(operand.cdr())));	
 			case NOT: // BooleanNode에 !(not) 걸어버리기!
@@ -83,7 +74,7 @@ public class CuteInterpreter {
 				&& runExpr(((ListNode)runExpr(operand.car())).cdr()) == null) { // 해당 list의 cdr()도 null이면
 					return BooleanNode.TRUE_NODE;
 				}
-				return BooleanNode.FALSE_NODE;
+				return BooleanNode.FALSE_NODE; 	
 			case EQ_Q: // 두 값이 같은 지 검사. 보류.
 				NodePrinter.getPrinter(System.out).prettyPrint(runExpr(operand.cdr()));
 				System.out.println(String.valueOf(runExpr(operand.car())));
@@ -125,10 +116,8 @@ public class CuteInterpreter {
 					return BooleanNode.TRUE_NODE; // 두 operand 중 car()가 더 크면 TRUE
 				}
 				return BooleanNode.FALSE_NODE; // > 가 아니면.				
-			case EQ: // =
-				System.out.println(((IntNode)runExpr(operand.car())).getIntValue());
-				System.out.println(((IntNode)((ListNode)runExpr(operand.cdr())).car()).getIntValue());
-				if(((IntNode)runExpr(operand.car())).getIntValue() == ((IntNode)((ListNode)runExpr(operand.cdr())).car()).getIntValue()) {
+			case EQ: // = ( 두 값을 int로 변환 )
+				if(((IntNode)runExpr(operand.car())).getIntValue().equals(((IntNode)((ListNode)runExpr(operand.cdr())).car()).getIntValue())) {
 					return BooleanNode.TRUE_NODE; // 두 operand가 같으면 TRUE
 				}
 				return BooleanNode.FALSE_NODE; // = 가 아니면.				
