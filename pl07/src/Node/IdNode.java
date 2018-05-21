@@ -13,4 +13,8 @@ public class IdNode implements ValueNode {
 	public String toString() {
 		return "ID: " + idString;
 	}
+	
+	public String getIdNode() {
+		return idString;
+	}
 }

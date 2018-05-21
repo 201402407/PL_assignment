@@ -69,10 +69,10 @@ public class CuteInterpreter {
 				}
 				if(runExpr(((ListNode)runExpr(operand.cdr().car())).car()) instanceof BooleanNode) { // 만약 cdr()의 앞이 Boolean이면.
 					if(((BooleanNode)runExpr(((ListNode)runExpr(operand.cdr().car())).car())).getBoolean()) { // car()이 #T이면.
-						if((((ListNode)runExpr(operand.cdr().car())).cdr()).car() instanceof QuoteNode) { // ( cond ( #T ' ( + 2 3 ) ) ) 에 대한 예외처리.
+						if((((ListNode)runExpr(operand.cdr().car())).cdr()).car() instanceof QuoteNode) { // ' 에 대한 예외처리.
 							return runExpr(runExpr(((ListNode)runExpr(operand.cdr().car())).cdr()));
 						}
-						return runExpr(((ListNode)runExpr(((ListNode)runExpr(operand.cdr().car())).cdr())).car());
+						return runExpr(((ListNode)runExpr(((ListNode)runExpr(operand.cdr().car())).cdr())).car()); // '가 아닌 listnode 예외 처리.
 					}
 				}
 				
@@ -83,7 +83,7 @@ public class CuteInterpreter {
 					return runExpr((operand.cdr()).cdr());
 				}
 				
-				return BooleanNode.FALSE_NODE;
+				return BooleanNode.FALSE_NODE; // 둘 다 False가 나오면.
 			case ATOM_Q: // ATOM(list이면 false, list가 아니면 true, null이면 true(이건 선택 - 완료.) )
 				if(runExpr(operand.car()) instanceof ListNode) {
 					if(runExpr(((ListNode)runExpr(operand.car())).car()) == null // 해당 list의 car()이 null이고 
@@ -99,15 +99,21 @@ public class CuteInterpreter {
 					return BooleanNode.TRUE_NODE;
 				}
 				return BooleanNode.FALSE_NODE; 	
-			case EQ_Q: // 두 값이 같은 지 검사. 보류.
-				NodePrinter.getPrinter(System.out).prettyPrint(runExpr(operand.car()));
-				NodePrinter.getPrinter(System.out).prettyPrint(runExpr(operand.cdr()));
-				ListNode a = (ListNode)runExpr(operand.car());
-				ListNode b = (ListNode)runExpr(operand.cdr());
-			
-				if(a.equals(b)) { // 값을 String으로 변환 후 비교.
-					System.out.println("왜안들어가");
-					return BooleanNode.TRUE_NODE;
+			case EQ_Q: // 두 값이 같은 지 검사.
+				String temp = "";
+				if(runExpr(operand.car()) instanceof ListNode && runExpr(operand.cdr().car()) instanceof ListNode) { // ListNode인 경우.
+					String a = NodeToString(operand.car(), temp);
+					temp = "";
+					String b = NodeToString(operand.cdr().car(), temp);
+					if(a.equals(b)) {
+						return BooleanNode.TRUE_NODE;
+					}
+		
+				}
+				else { // ListNode가 아닌 경우.
+					if(String.valueOf(runExpr(operand.car())).equals(String.valueOf(runExpr(operand.cdr())))) { // 값을 String으로 변환 후 비교.
+	 					return BooleanNode.TRUE_NODE;
+	 				}
 				}
 				return BooleanNode.FALSE_NODE;
 			default:
@@ -157,6 +163,47 @@ public class CuteInterpreter {
 	
 	private Node runQuote(ListNode node) { // QuoteNode랑 ListNode랑 무슨 관계? QuoteNode = ListNode ?
 		return ((QuoteNode)node.car()).nodeInside(); // 
+	}
+	
+	private String NodeToString(Node car, String a) {
+		if(car instanceof ListNode) { // listNode.car() 원소 관련.
+			if(car.equals(((ListNode)car).EMPTYLIST)) {
+				return " ( ) ";
+			}
+			if(car.equals(((ListNode)car).ENDLIST)) {
+				return " ) ";
+			}
+			a += " ( ";
+			if(((ListNode)car).car() instanceof ListNode) { // listNode.car() 원소 관련.
+				a += NodeToString(((ListNode)car).car(), a); // ListNode로 변환 후 메소드 실행.
+			}
+			else {
+				a += NodeToString(((ListNode)car).car(), a);
+			}
+			
+			if(((ListNode)car).cdr() instanceof ListNode) { // listNode.cdr() 원소 관련.
+				a += NodeToString(((ListNode)car).cdr(), a);
+			}
+			else {
+				a += NodeToString(((ListNode)car).cdr().car(), a);
+			}
+			a += " ) ";
+			return a;
+		}
+		if(car instanceof IntNode) {
+			return String.valueOf(((IntNode)car).getIntValue());
+		}
+		if(car instanceof BooleanNode) {
+			return String.valueOf(((BooleanNode)car).getBoolean());
+		}
+		if(car instanceof IdNode) {
+			return ((IdNode)car).getIdNode();
+		}
+		if(car instanceof QuoteNode) {
+			return " ' " + NodeToString(((QuoteNode)car).nodeInside(), a);
+		}
+		a += " ";
+		return a;
 	}
 	
 	public static void main(String[] args) 	{ 
