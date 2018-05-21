@@ -23,7 +23,7 @@ public class CuteInterpreter {
 		else if (rootExpr instanceof ListNode)
 			return runList((ListNode) rootExpr); // ListNode인 경우에만 다르게 리턴한다. runList() 실행.
 		else if (rootExpr instanceof QuoteNode) // runExpr에 들어온 rootExpr가 QuoteNode인 경우.
-			return ((QuoteNode) rootExpr).nodeInside(); // nodeInside를 return한다.
+			return ((QuoteNode)rootExpr).nodeInside(); // nodeInside를 return한다.
 		else
 			errorLog("run Expr error");
 		return null;
@@ -60,23 +60,29 @@ public class CuteInterpreter {
 				return BooleanNode.TRUE_NODE;
 			case COND: // 조건문. 하나만 T면 그 값을 리턴. 대신 둘 다 True면 앞의 값인 car() 리턴.
 				if(runExpr(((ListNode)(operand.car())).car()) instanceof BooleanNode) { // 만약 car()의 앞이 Boolean이면.
-					System.out.println("tTrue");
 					if(((BooleanNode)runExpr(((ListNode)(operand.car())).car())).getBoolean()) { // car().car()이 #T이면.
-						return runExpr(((ListNode)(operand.car())).cdr());
+						if(((ListNode)runExpr(operand.car())).cdr().car() instanceof QuoteNode) { // ( cond ( #T ' ( + 2 3 ) ) ) 에 대한 예외처리.
+							return runExpr((ListNode)runExpr(((ListNode)(operand.car())).cdr()));
+						}
+						return runExpr(((ListNode)runExpr(((ListNode)(operand.car())).cdr())).car()); // '가 없는 경우.
 					}
 				}
-				if(runExpr((operand.cdr()).car()) instanceof BooleanNode) { // 만약 cdr()의 앞이 Boolean이면.
-					System.out.println("zzz");
-					if(((BooleanNode)runExpr((operand.cdr()).car())).getBoolean()) { // car()이 #T이면.
-						return runExpr((operand.cdr()).cdr());
+				if(runExpr(((ListNode)runExpr(operand.cdr().car())).car()) instanceof BooleanNode) { // 만약 cdr()의 앞이 Boolean이면.
+					if(((BooleanNode)runExpr(((ListNode)runExpr(operand.cdr().car())).car())).getBoolean()) { // car()이 #T이면.
+						if((((ListNode)runExpr(operand.cdr().car())).cdr()).car() instanceof QuoteNode) { // ( cond ( #T ' ( + 2 3 ) ) ) 에 대한 예외처리.
+							return runExpr(runExpr(((ListNode)runExpr(operand.cdr().car())).cdr()));
+						}
+						return runExpr(((ListNode)runExpr(((ListNode)runExpr(operand.cdr().car())).cdr())).car());
 					}
 				}
+				
 				if(((BooleanNode)runExpr(((ListNode)runExpr(operand.car())).car())).getBoolean()) { // 연산을 통해 car()이 True가 나오면.
 					return runExpr(((ListNode)(operand.car())).cdr());
 				}
 				if(((BooleanNode)runExpr(((ListNode)runExpr(operand.cdr())).car())).getBoolean()) { // 연산을 통해 cdr()이 True가 나오면.
 					return runExpr((operand.cdr()).cdr());
 				}
+				
 				return BooleanNode.FALSE_NODE;
 			case ATOM_Q: // ATOM(list이면 false, list가 아니면 true, null이면 true(이건 선택 - 완료.) )
 				if(runExpr(operand.car()) instanceof ListNode) {
