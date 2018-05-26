@@ -206,36 +206,40 @@ public class CuteInterpreter {
 	}
 	
 	public static void main(String[] args) 	{
-		while(true) { // 입력 및 출력 반복.
-			PrintWriter pw;
-			PrintStream ps = System.out;
-			File file = new File("test"); // 임의의 파일 생성.
-			try { // PrintWriter 예외처리.
-				FileWriter fw = new FileWriter(file);
-				pw = new PrintWriter(fw);
+		PrintStream ps = System.out;
+		File tmp = new File("test");
+		
+		while(true) {
+			try {
+				PrintWriter pw = new PrintWriter(new FileWriter(tmp));
 				Scanner sc = new Scanner(System.in); // scanner 객체 생성.
+
+				
 				ps.print("> ");
-				pw.print(sc.nextLine()); // 사용자가 원하는 문장 입력받아 파일에 기록할 준비.
+				String str = sc.nextLine(); // 사용자가 원하는 문장 입력받아 파일에 기록할 준비.
+				if(str.equals("quit")) {
+					pw.close();
+					sc.close();
+					tmp.delete();
+					break;
+				}
+				pw.print(str);
 				pw.flush(); // 파일에 기록. 여기까지가 입력 첫 줄.
-			
-				CuteParser cuteParser = new CuteParser(file); // 계산 출력을 위한 준비.
+				
+				CuteParser cuteParser = new CuteParser(tmp); // 계산 출력을 위한 준비.
 				Node parseTree = cuteParser.parseExpr(); // 문자열 노드로.
 				CuteInterpreter i = new CuteInterpreter();
 				Node resultNode = i.runExpr(parseTree);
 				ps.print("... ");
 				NodePrinter.getPrinter(System.out).prettyPrint(resultNode);
+
 				ps.println();
-				
-				fw.close();
+								
 				pw.close(); // PrintWriter 닫기. 메모리 절약.
-				
-				if(file.exists()) {
-					file.deleteOnExit();
-				}
-				}
+			}
 			catch(IOException e) {
 				e.printStackTrace();
-			}		
+			}
 		}
 	}
 }

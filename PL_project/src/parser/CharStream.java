@@ -11,7 +11,7 @@ class CharStream {
 	private Character cache;
 	
 	static CharStream from(File file) throws FileNotFoundException {
-		return new CharStream(new FileReader(file)); // 객체 생성 후 리턴하는 함수. FileReader를 이용해 문장 읽음. 그 후 다시 Scanner로 돌아감.
+		return new CharStream(new FileReader(file)); 
 	}
 	
 	CharStream(Reader reader) {
