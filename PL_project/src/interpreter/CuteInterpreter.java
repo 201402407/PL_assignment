@@ -21,15 +21,29 @@ public class CuteInterpreter {
 			return false;
 		}
 		
-		String Id = ((IdNode)runExpr(id)).getIdNode(); // 인자 id가 무조건 IdNode이거나, QuoteNode의 NodeInside도 IdNode라고 가정.
-		Node Value = runExpr(value.car());
-		
-		for(String key : DefineTable.keySet()) {
-			if(id.equals(key)) 
-				DefineTable.remove(key); // 같은 문자가 존재한다면, 제거.
+		if(id instanceof IdNode) {
+			String Id = ((IdNode)id).getIdNode(); // 인자 id가 무조건 IdNode이거나, QuoteNode의 NodeInside도 IdNode라고 가정.
+			if(value.car() instanceof IdNode) { // 문자가 들어오는 것에 대한 false 처리.
+				return false;
+			}
+			if(!(value.car() instanceof QuoteNode) // 값이 QuoteNode가 아니고, 
+					&& (runExpr(value.car()) instanceof ListNode)) { // BinaryNode가 없는 ListNode 그 자체이면.
+				return false;
+			}
+			
+			Node Value = runExpr(value.car());
+			
+			if(value.car() instanceof QuoteNode) {
+				Value = value.car();
+			}
+			for(String key : DefineTable.keySet()) {
+				if(id.equals(key)) 
+					DefineTable.remove(key); // 같은 문자가 존재한다면, 제거.
+			}
+			DefineTable.put(Id, Value); // 집어넣기.
+			return true;	
 		}
-		DefineTable.put(Id, Value); // 집어넣기.
-		return true;
+		return false;
 	}
 	
 	public Node lookupTable(String id) { // HashMap에서 데이터 꺼내오기.
@@ -41,12 +55,6 @@ public class CuteInterpreter {
 		}
 	}
 	
-	public ListNode ListNode_operand(Node operand) {
-		if(runExpr(operand) instanceof ListNode)
-			return (ListNode)operand;
-		return null;
-	}
-	
 	private void errorLog(String err) {
 		System.out.println(err);
 	}
@@ -55,7 +63,7 @@ public class CuteInterpreter {
 		if (rootExpr == null)
 			return null;
 		if (rootExpr instanceof IdNode)
-			return rootExpr;
+			return lookupTable(((IdNode) rootExpr).getIdNode());
 		else if (rootExpr instanceof IntNode)
 			return rootExpr;
 		else if (rootExpr instanceof BooleanNode)
@@ -99,39 +107,66 @@ public class CuteInterpreter {
 		
 		switch (operator.getFunctionType()) { // 여러 동작 구현.
 			case CAR: // List의 맨 처음 원소 리턴.
-					return ((ListNode)runExpr(op_car)).car();
+					return runExpr(((ListNode)runExpr(op_car)).car());
 			case CDR: // List의 맨 처음 원소를 제외한 나머지 list 리턴.
-					return new QuoteNode(((ListNode)runExpr(op_car)).cdr()); // PDF에 cdr의 출력값에는 ' 가 붙어있다.
+				Node temp = operand.car(); // 반복되는 cdr의 내부 define 값으로 변경되는 경우 예외처리.
+				if(temp instanceof IdNode) { // 첫 Node 안의 문자만 define된 값을 불러올 수 있다.
+					return new QuoteNode(((ListNode)runExpr(lookupTable(((IdNode)temp).getIdNode()))).cdr());
+				}
+				if(runExpr(temp) instanceof ListNode) { // 내부 노드의 car()이 반복되는 Function이라면.
+					if(((ListNode)runExpr(temp)).car() instanceof FunctionNode ||
+							((ListNode)runExpr(temp)).car() instanceof BinaryOpNode) {
+						temp = runExpr(runExpr(temp)); // 재귀.
+					}
+				}
+				return new QuoteNode(runExpr(((ListNode)runExpr(temp)).cdr())); // PDF에 cdr의 출력값에는 ' 가 붙어있다.
 			case CONS: // 한 개의 원소와 한 개의 리스트를 붙여서 새로운 리스트 만듬. (head + tail)
-				return new QuoteNode(ListNode.cons(runExpr(op_car), (ListNode)runExpr(operand.cdr())));	
+				return new QuoteNode(ListNode.cons(runExpr(op_car), (ListNode)runExpr(op_cdr)));	
 			case NOT: // BooleanNode에 !(not) 걸어버리기!
 				if(((BooleanNode)runExpr(op_car)).getBoolean()) {
 					return BooleanNode.FALSE_NODE;
 				}
 				return BooleanNode.TRUE_NODE;
 			case COND: // 조건문. 하나만 T면 그 값을 리턴. 대신 둘 다 True면 앞의 값인 car() 리턴.
-				if(runExpr(((ListNode)(op_car)).car()) instanceof BooleanNode) { // 만약 car()의 앞이 Boolean이면.
-					if(((BooleanNode)runExpr(((ListNode)(op_car)).car())).getBoolean()) { // car().car()이 #T이면.
-						if(((ListNode)runExpr(op_car)).cdr().car() instanceof QuoteNode) { // ( cond ( #T ' ( + 2 3 ) ) ) 에 대한 예외처리.
-							return runExpr((ListNode)runExpr(((ListNode)(op_car)).cdr()));
+		
+				if(runExpr(((ListNode)(op_car)).car()) instanceof BooleanNode) { // 그냥 BooleanNode인 경우.
+					
+					if(((BooleanNode)runExpr(((ListNode)(op_car)).car())).getBoolean()) {
+						if(((ListNode)op_car).cdr().car() instanceof IdNode) {
+								return lookupTable(((IdNode)((ListNode)op_car).cdr().car()).getIdNode());
 						}
-						return runExpr(((ListNode)runExpr(((ListNode)(op_car)).cdr())).car()); // '가 없는 경우.
-					}
-				}
-				if(runExpr(((ListNode)runExpr(op_cdr)).car()) instanceof BooleanNode) { // 만약 cdr()의 앞이 Boolean이면.
-					if(((BooleanNode)runExpr(((ListNode)runExpr(op_cdr)).car())).getBoolean()) { // car()이 #T이면.
-						if((((ListNode)runExpr(op_cdr)).cdr()).car() instanceof QuoteNode) { // ' 에 대한 예외처리.
-							return runExpr(runExpr(((ListNode)runExpr(op_cdr)).cdr()));
-						}
-						return runExpr(((ListNode)runExpr(((ListNode)runExpr(op_cdr)).cdr())).car()); // '가 아닌 listnode 예외 처리.
+						return runExpr(((ListNode)runExpr(((ListNode)(op_car)).cdr()))); // '가 없는, define이 없는 경우.
 					}
 				}
 				
-				if(((BooleanNode)runExpr(((ListNode)runExpr(op_car)).car())).getBoolean()) { // 연산을 통해 car()이 True가 나오면.
-					return runExpr(((ListNode)(op_car)).cdr());
+				else if(lookupTable(((IdNode)((ListNode)(op_car)).car()).getIdNode()) instanceof BooleanNode) { // define 값이 BooleanNode인 경우.
+					
+					if(((BooleanNode)lookupTable(((IdNode)((ListNode)(op_car)).car()).getIdNode())).getBoolean()) { // car().car()의 define값이 #T이면. 
+						if(((ListNode)op_car).cdr().car() instanceof IdNode) {
+								return lookupTable(((IdNode)((ListNode)op_car).cdr().car()).getIdNode());
+						}
+						return runExpr(((ListNode)runExpr(((ListNode)(op_car)).cdr()))); // '가 없는, define이 없는 경우.
+					}
 				}
-				if(((BooleanNode)runExpr(op_cdr)).getBoolean()) { // 연산을 통해 cdr()이 True가 나오면.
-					return runExpr((operand.cdr()).cdr());
+				
+				if(runExpr(((ListNode)(op_cdr)).car()) instanceof BooleanNode) {
+					
+					if(((BooleanNode)runExpr(((ListNode)(op_cdr)).car())).getBoolean()) {
+						if(((ListNode)op_cdr).cdr().car() instanceof IdNode) {
+								return lookupTable(((IdNode)((ListNode)op_cdr).cdr().car()).getIdNode());
+						}
+						return runExpr(((ListNode)runExpr(((ListNode)(op_cdr)).cdr()))); // '가 없는, define이 없는 경우.
+					}
+				}
+				
+				else if(lookupTable(((IdNode)((ListNode)(op_cdr)).car()).getIdNode()) instanceof BooleanNode) {
+					
+					if(((BooleanNode)lookupTable(((IdNode)((ListNode)(op_cdr)).car()).getIdNode())).getBoolean()) { // car().car()의 define값이 #T이면. 
+						if(((ListNode)op_cdr).cdr().car() instanceof IdNode) {					
+								return lookupTable(((IdNode)((ListNode)op_cdr).cdr().car()).getIdNode());
+						}
+						return runExpr(((ListNode)runExpr(((ListNode)(op_cdr)).cdr()))); // '가 없는, define이 없는 경우.
+					}
 				}
 				
 				return BooleanNode.FALSE_NODE; // 둘 다 False가 나오면.
@@ -145,34 +180,71 @@ public class CuteInterpreter {
 				}
 				return BooleanNode.TRUE_NODE;
 			case NULL_Q: // list가 null인지 검사.
-				if(runExpr(((ListNode)runExpr(op_car)).car()) == null // 해당 list의 car()이 null이고 
-				&& runExpr(((ListNode)runExpr(op_car)).cdr()) == null) { // 해당 list의 cdr()도 null이면
-					return BooleanNode.TRUE_NODE;
+				if(runExpr(op_car) instanceof ListNode) {
+					if(runExpr(((ListNode)runExpr(op_car)).car()) == null // 해당 list의 car()이 null이고 
+							&& runExpr(((ListNode)runExpr(op_car)).cdr()) == null) { // 해당 list의 cdr()도 null이면
+								return BooleanNode.TRUE_NODE;
+							}	
 				}
 				return BooleanNode.FALSE_NODE; 	
 			case EQ_Q: // 두 값이 같은 지 검사.
 				if(runExpr(op_car) instanceof ListNode){ //만약 operand의 quoted가 listNode면
 					ListNode eq1 =(ListNode)(runExpr(op_car)); // eq1의 초기값을 operand의 quoted값으로
-					if(runExpr(op_cdr) instanceof ListNode) {
+					if(runExpr(op_cdr) instanceof ListNode) { // op_cdr의 quoted 가 listNode이면
 						ListNode eq2 =(ListNode)(runExpr(op_cdr));
+						while(eq1.cdr() != null || eq2.cdr() != null) {
+							if(runExpr(eq1.car()) instanceof IdNode && runExpr(eq2.car()) instanceof IdNode) {
+								if(((IdNode)runExpr(eq1.car())).getIdNode().equals(((IdNode)runExpr(eq2.car())).getIdNode())){ // 만약 eq1의 car의 string값이 eq2의 car의 string값과 같다면
+									eq1 = eq1.cdr(); // eq1을 eq1의 cdr로
+									eq2 = eq2.cdr(); // eq2를 eq2의 cdr로
+								}
+								else {
+									return BooleanNode.FALSE_NODE;
+								}
+							}
+							if(runExpr(eq1.car()) instanceof IntNode && runExpr(eq2.car()) instanceof IntNode) {
+								if(((IntNode)eq1.car()).getIntValue().equals(((IntNode)eq2.car()).getIntValue())){ // 만약 eq1의 car의 string값이 eq2의 car의 string값과 같다면
+									eq1 = eq1.cdr(); // eq1을 eq1의 cdr로
+									eq2 = eq2.cdr(); // eq2를 eq2의 cdr로
+								}
+								else {
+									return BooleanNode.FALSE_NODE;
+								}
+							}
+						}
 					}
-					
-					while(eq1.cdr()!=null || eq2.cdr()!=null){ // eq1나 eq2의 cdr이 null일 때까지 반복
-					if(((IdNode)eq1.car()).getIdNode().equals(((IdNode)eq2.car()).getIdNode())){ // 만약 eq1의 car의 string값이 eq2의 car의 string값과 같다면
-						eq1 = eq1.cdr(); // eq1을 eq1의 cdr로
-						eq2 = eq2.cdr(); // eq2를 eq2의 cdr로
-					}
-					else{ // 그렇지 않으면 같지 않으므로 falsenode리턴
+					else { // op_car이 listNode인데 op_cdr이 listNode가 아니면 당연히 FALSE.
 						return BooleanNode.FALSE_NODE;
-					}	
 					}
-					return BooleanNode.TRUE_NODE; // while문을 빠져나오면 false가 아니므로 truenode리턴
-				}else{ // 만약 operand의 quoted가 listNode가 아니면
-				if(((IdNode)(runQuote(operand))).getIdNode().equals(((IdNode)(runQuote(operand.cdr()))).getIdNode())){ //operand의 quoted의 string값과 operand의 cdr의 quoted값의 string값을 비교
-					return BooleanNode.TRUE_NODE; // 같으므로 truenode리턴
-				}else{ // 다르면
-					return BooleanNode.FALSE_NODE; // 같지않으므로 falsenode리턴
-				}	
+					return BooleanNode.TRUE_NODE;
+				}
+				else { // 만약 operand의 quoted가 listNode가 아니면
+					if(runExpr(op_car) instanceof IdNode) {
+						if(runExpr(op_cdr) instanceof IdNode) {
+							if(((IdNode)runExpr(op_car)).getIdNode().equals(((IdNode)runExpr(op_cdr)).getIdNode())){ // 만약 eq1의 car의 string값이 eq2의 car의 string값과 같다면
+								return BooleanNode.TRUE_NODE;
+							}
+							else {
+								return BooleanNode.FALSE_NODE;
+							}
+						}
+						else {
+							return BooleanNode.FALSE_NODE;
+						}
+					}
+					if(runExpr(op_car) instanceof IntNode) {
+						if(runExpr(op_cdr) instanceof IntNode) {
+							if(((IntNode)runExpr(op_car)).getIntValue().equals(((IntNode)runExpr(op_cdr)).getIntValue())){ // 만약 eq1의 car의 string값이 eq2의 car의 string값과 같다면
+								return BooleanNode.TRUE_NODE;
+							}
+							else {
+								return BooleanNode.FALSE_NODE;
+							}
+						}
+						else {
+							return BooleanNode.FALSE_NODE;
+						}
+					}	
 			}
 			case DEFINE:
 				if(insertTable(operand.car(), operand.cdr())) {
